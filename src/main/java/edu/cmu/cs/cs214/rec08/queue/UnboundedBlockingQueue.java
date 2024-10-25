@@ -7,29 +7,49 @@ import net.jcip.annotations.ThreadSafe;
 import net.jcip.annotations.GuardedBy;
 
 /**
- * Modify this class to be thread-safe and be an UnboundedBlockingQueue.
+ * A thread-safe implementation of UnboundedBlockingQueue.
  */
 @ThreadSafe
 public class UnboundedBlockingQueue<E> implements SimpleQueue<E> {
     @GuardedBy("this")
-    private Deque<E> queue = new ArrayDeque<>();
+    private final Deque<E> queue = new ArrayDeque<>();
 
     public UnboundedBlockingQueue() { }
 
-    public boolean isEmpty() { return queue.isEmpty(); }
+    @Override
+    public synchronized boolean isEmpty() {
+        return queue.isEmpty();
+    }
 
-    public int size() { return queue.size(); }
+    @Override
+    public synchronized int size() {
+        return queue.size();
+    }
 
-    public E peek() { return queue.peek(); }
+    @Override
+    public synchronized E peek() {
+        return queue.peek();
+    }
 
-    public void enqueue(E element) { queue.add(element); }
+    @Override
+    public synchronized void enqueue(E element) {
+        queue.add(element);
+        // Notify any waiting thread that an element is available.
+        notifyAll();
+    }
 
-    /**
-     * TODO:  Change this method to block (waiting for an enqueue) rather
-     * than throw an exception.  Completing this task may require
-     * modifying other methods.
-     */
-    public E dequeue() { return queue.remove(); }
+    @Override
+    public synchronized E dequeue() throws InterruptedException {
+        // While the queue is empty, wait for an element to be enqueued.
+        while (queue.isEmpty()) {
+            wait();
+        }
+        // Now that the queue is not empty, return the first element.
+        return queue.remove();
+    }
 
-    public String toString() { return queue.toString(); }
+    @Override
+    public synchronized String toString() {
+        return queue.toString();
+    }
 }
